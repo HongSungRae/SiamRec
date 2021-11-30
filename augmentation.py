@@ -6,7 +6,7 @@ import pedalboard
 import random
 import time
 from utils import listen
-from dataset import MTA, GTZAN
+from dataset import MP3Audio, MP4Audio
 import torch
 from torch.utils.data import DataLoader
 import numpy as np
@@ -75,9 +75,9 @@ def sungrae_pedal(audio,sample_rate=44100):
                                   # threshold_db: float = 0, ratio: float = 1, attack_ms: float = 1.0, release_ms: float = 100
                                   Gain(gain_db=random.randrange(-15,30)),
                                   # gain_db: float = 1.0
-                                  Chorus(rate_hz=random.randrange(1,30), 
-                                         depth = random.randrange(0,5), 
-                                         centre_delay_ms= 7.0, feedback = 0.0, mix = 0.5), 
+                                  Chorus(rate_hz=random.randrange(1,7), 
+                                         depth = random.randrange(0,4), 
+                                         centre_delay_ms= 4.0, feedback = 0.0, mix = 0.5), 
                                   # rate_hz: float = 1.0, depth: float = 0.25, centre_delay_ms: float = 7.0, feedback: float = 0.0, mix: float = 0.5
                                   LadderFilter(mode=LadderFilter.Mode.HPF12, cutoff_hz=200, resonance=0, drive=random.randrange(1,6)), 
                                   # cutoff_hz: float = 200, resonance: float = 0, drive: float = 1.0
@@ -102,41 +102,47 @@ def sungrae_pedal(audio,sample_rate=44100):
 
 
 
-def random_mix(audio,patchs=None):
-    assert patchs != None
-    if audio.shape[-1]%patchs != 0:
+
+def random_mix(audio,n_patchs=None):
+    assert n_patchs != None
+    if audio.shape[-1]%n_patchs != 0:
         raise ValueError('오디오 시퀀스가 patch수 만큼 정수로 나눠지지 않습니다')
     aug_audio = audio.clone()
+    divide = int(audio.shape[-1]/n_patchs)
     for idx in range(audio.shape[0]):
-        # 섞는다
-        # 자리에 넣는다
-        pass
+        random_idx = [i for i in range(n_patchs)]
+        random.shuffle(random_idx)
+        temp = audio[idx].clone()
+        for i,molayo in enumerate(random_idx):
+            temp[0][i*divide:(i+1)*divide] = audio[idx][0][molayo*divide:(molayo+1)*divide]
+        aug_audio[idx] = temp
     return aug_audio
+
 
 
 
 if __name__ == '__main__':
     input_length = 48000
-    # MTA
-    print('== MTA ==')
-    mta_data = MTA('test',input_length=input_length)
-    mta_dataloader = DataLoader(mta_data,batch_size=1,drop_last=True,shuffle=True)
-    mta_x, mta_y = next(iter(mta_dataloader))
-    print('Origianl Sounds')
-    listen(mta_x[0,0])
-    aug = sungrae_pedal(mta_x)
-    time.sleep(1)
-    print('Now on pedal sounds')
-    listen(aug[0,0])
+    # WAV - Pedalboard
+    # print('== WAV - Pedalboard ==')
+    # mp3_data = MP3Audio('validation',input_length=input_length)
+    # mp3_dataloader = DataLoader(mp3_data,batch_size=1,drop_last=True,shuffle=True)
+    # mp3_x = next(iter(mp3_dataloader))
+    # print('Origianl Sounds')
+    # listen(mp3_x[0,0])
+    # aug = sungrae_pedal(mp3_x)
+    # time.sleep(1)
+    # print('Now on pedal sounds')
+    # listen(aug[0,0])
 
-    # GTZAN
-    print('== GTZAN ==')
-    gtzan_data = GTZAN('validation',input_length=input_length)
-    gtzan_dataloader = DataLoader(gtzan_data,batch_size=1,drop_last=True,shuffle=True)
-    gtzan_x, gtzan_y = next(iter(gtzan_dataloader))
+    # WAV - Random Mix
+    print('== WAV - Random Mix ==')
+    mp3_data = MP3Audio('validation',input_length=input_length)
+    mp3_dataloader = DataLoader(mp3_data,batch_size=1,drop_last=True,shuffle=True)
+    mp3_x = next(iter(mp3_dataloader))
     print('Origianl Sounds')
-    listen(gtzan_x[0,0])
-    aug = sungrae_pedal(gtzan_x)
+    listen(mp3_x[0,0])
+    aug = random_mix(mp3_x,n_patchs=12)
     time.sleep(1)
-    print('Now on pedal sounds')
+    print('Now on Mixed sounds')
     listen(aug[0,0])
