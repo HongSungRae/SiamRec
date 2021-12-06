@@ -1283,3 +1283,32 @@ data/wav_audio/프라이머리(Primary)_씨스루 (Feat. 개코 & Zion.T).MP3.wa
 data/wav_audio/프라이머리-입장정리 (1).wav
 data/wav_audio/헤이즈 (Heize)-01-And July (Feat. DEAN, DJ Friz).wav
 data/wav_audio/효린 - 너 밖에 몰라 (One Way Love).wav
+*.mp4
+*.mp3
+*.json
+exp_transformer_pedalboard_adam/transformer_pedalboard_100.pth
+exp_transformer_pedalboard_adam/train_loss.log
+exp_transformer_pedalboard_adam/loss_curve.png
+exp_resnet50_randommix_adam/train_loss.log
+exp_resnet50_pedalboard_adam/train_loss.log
+exp_resnet50_pedalboard_adam/resnet50_pedalboard_100.pth
+exp_resnet50_pedalboard_adam/loss_curve.png
+exp_resnet152_pedalboard_adam/train_loss.log
+exp_resnet152_pedalboard_adam/resnet152_pedalboard_100.pth
+exp_resnet152_pedalboard_adam/loss_curve.png
+exp_resnet101_pedalboard_adam/train_loss.log
+exp_resnet101_pedalboard_adam/resnet101_pedalboard_100.pth
+exp_resnet101_pedalboard_adam/loss_curve.png
+data/다운실패.txt
+data/spotify_million_playlist/follower상위100.csv
+data/audio/Steve Anderson-Suite Bergamasque, L. 75
+data/audio/Songs
+data/audio/Music for Deep Relaxation-The Rise of Freedom
+data/audio/Music for Deep Relaxation-Sweetness of Being
+data/audio/Music for Deep Relaxation-Mystic Power
+data/audio/Music for Deep Relaxation-Interbeing
+data/audio/Music for Deep Relaxation-Happiness
+data/audio/Music for Deep Relaxation-Exquisite Relaxation
+data/audio/Hoodie Allen-Two Lips (feat. Ocd
+data/audio/Ephemeral Rift-Professor Clemmons
+data/audio/Beach House-10

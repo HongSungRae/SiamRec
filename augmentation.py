@@ -137,7 +137,7 @@ if __name__ == '__main__':
 
     # WAV - Random Mix
     print('== WAV - Random Mix ==')
-    mp3_data = MP3Audio('validation',input_length=input_length)
+    mp3_data = MP3Audio('validation',input_length=input_length,type='mp3')
     mp3_dataloader = DataLoader(mp3_data,batch_size=1,drop_last=True,shuffle=True)
     mp3_x = next(iter(mp3_dataloader))
     print('Origianl Sounds')

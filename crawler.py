@@ -8,7 +8,7 @@ import time
 import youtube_dl
 import pandas as pd
 from pytube import YouTube
-
+from tqdm import tqdm
 
 
 def get_YouTube_url(df):
@@ -55,7 +55,8 @@ def download_mp3(artist=None,title=None,link=None):
 
 
 # https://pytube.io/en/latest/api.html#pytube.Stream.download
-def download_mp4(artist=None,title=None,link=None): # 이게 훨씬 빠름
+# 이게 훨씬 빠름
+def download_mp4(artist=None,title=None,link=None):
     assert link!=None and artist!=None and title!=None
     try:
         yt = YouTube(link) 
@@ -66,6 +67,18 @@ def download_mp4(artist=None,title=None,link=None): # 이게 훨씬 빠름
         print(f'Caution : {artist}-{title} is invalild.')
 
 
+
+# 이 main함수는 ./data/spotify_million_playlist/follower상위100.csv에 있는 playlist에서
+# 각각의 playlist 중 앞 20곡을 test_audio에 다운로드합니다.
+def main():
+    df = pd.read_csv('./data/spotify_million_playlist/url.csv')
+    # get_YouTube_url(df)
+    for i,item in enumerate(df.iterrows()):
+        pid,artist,track,url = item[1]
+        download_mp4(artist,track,url)
+
+
+
 if __name__ == '__main__':
     ## Test downloader
     # test_link = "https://www.youtube.com/watch?v=74_yqNBhQbA" # Yerin Baek - Antifreeze
@@ -73,5 +86,6 @@ if __name__ == '__main__':
     # download_mp4('Yerin Baek','Antifreeze',test_link)
 
     ## Test url crawler
-    df = pd.read_csv('./data/spotify_million_playlist/url.csv')
-    get_YouTube_url(df[0:2])
+    # df = pd.read_csv('./data/spotify_million_playlist/url.csv')
+    # get_YouTube_url(df[0:2])
+    main()

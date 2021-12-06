@@ -14,24 +14,44 @@ import time
 from pydub import AudioSegment
 import os
 from tqdm import tqdm
-
+import json
+import librosa
 from dataset import MP3Audio, MP4Audio
 
 
-def mp3_to_wav(dir):
-    # dir의 모든 mp3 file을 wav format으로 바꿉니다
+
+# from_dir에 있는 모든 audio를 duration(초)만큼만 load합니다
+# load된 array를 key=노래제목, value = list(array) json으로
+# to_dir에 저장합니다
+def mp3_to_json(from_dir,to_dir,duration=29,sr=22050):
+    music_list = next(os.walk(from_dir))[2]
+    for music in tqdm(music_list):
+        try:
+            audio,_ = librosa.load(from_dir+'/'+music,sr=sr,duration=duration)
+            audio = np.array(audio,dtype=float)
+            audio_dict = {'audio' : audio.tolist()}
+            os.chdir(to_dir)
+            with open(music+'.json', 'w') as fp:
+                json.dump(audio_dict, fp)
+                os.chdir('./')
+        except:
+            print(f'{music}은(는) 변환되지 않습니다.')
+
+
+
+
+# from_dir의 모든 mp3 file을 
+# wav format으로 바꾸어 to_dir로 보냅니다
+def mp3_to_wav(from_dir,to_dir):
     mp3_list = os.listdir(dir)
     for mp3 in tqdm(mp3_list):                                                                      
-        src = dir + '/' + mp3
+        src = from_dir + '/' + mp3
         if '.mp3' in src:
-            dst = dir + '/' + mp3.replace('.mp3','.wav')
+            dst = to_dir + '/' + mp3.replace('.mp3','.wav')
         else:
-            dst = dir + '/' + mp3 + '.wav'
+            dst = to_dir + '/' + mp3 + '.wav'
         audSeg = AudioSegment.from_mp3(src)
         audSeg.export(dst, format="wav")
-
-
-
 
 
 
@@ -147,15 +167,15 @@ def draw_curve(work_dir, train_logger, test_logger):
 
 if __name__ == '__main__':
     ## Test listen()
-    fs = 160000 #48000
-    bs = 8
-    start = time.time()
-    mp3_data = MP3Audio('validation',fs)
-    mp3_dataloader = DataLoader(mp3_data,batch_size=bs,drop_last=True)
-    mp3_x = next(iter(mp3_dataloader))
-    print(f'Batch Size : {bs} | Time Duration : {time.time()-start}')
-    listen(mp3_x[3,0],fs)
-    time.sleep(1)
+    # fs = 160000 #48000
+    # bs = 8
+    # start = time.time()
+    # mp3_data = MP3Audio('validation',fs)
+    # mp3_dataloader = DataLoader(mp3_data,batch_size=bs,drop_last=True)
+    # mp3_x = next(iter(mp3_dataloader))
+    # print(f'Batch Size : {bs} | Time Duration : {time.time()-start}')
+    # listen(mp3_x[3,0],fs)
+    # time.sleep(1)
 
     ## Test listen_raw()
     # EnterSandman = './dataset/GTZAN/genres_original/metal/metal.00033.wav'
@@ -165,3 +185,6 @@ if __name__ == '__main__':
 
     ## Mp3 to Wav : Recommended. python reads Wav faster than Mp3 format
     # mp3_to_wav('./data/train_audio')
+
+    ## Mp3 to json
+    pass
