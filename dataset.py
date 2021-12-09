@@ -69,18 +69,37 @@ class JsonAudio(Dataset):
 
 
 
-class MP4Audio(Dataset):
+class TestJsonAudio(Dataset):
     '''
-    mp4 audio는 학습된 모델의 test단계에서 사용됩니다
+    학습된 모델의 test단계에서 사용됩니다
     '''
-    def __init__(self):
-        pass
+    def __init__(self,df,data_dir,input_length=48000):
+        self.df = df
+        self.data_dir = './data/json_audio'
+        self.input_length = input_length
+        self.error_term = ['/','\"','<','>','\\','|',':','*','?']
 
     def __len__(self):
-        pass
+        return len(self.df)
 
     def __getitem__(self, idx):
-        pass
+        pid,artist,track,url = self.df.iloc[idx]
+        song = artist + '-' + track
+        for item in song:
+            if item in self.error_term:
+                song = song.replace(item,'^')
+        try:
+            data = self.data_dir + '/' + song + '.mp4.json'
+            with open(data, 'r') as f:
+                waveform = np.array(json.load(f)['audio'],dtype=float)
+        except:
+            data = self.data_dir + '/' + song + '.mp3.json'
+            with open(data, 'r') as f:
+                waveform = np.array(json.load(f)['audio'],dtype=float)
+        random_idx = np.random.randint(low=0, high=int(waveform.shape[-1] - self.input_length))
+        waveform = waveform[0][random_idx:random_idx+self.input_length]
+        audio = np.expand_dims(waveform, axis = 0) # expand to [1,48000]
+        return audio
 
 
 

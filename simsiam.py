@@ -5,6 +5,80 @@ import torch
 
 
 
+
+class TestEncoder(nn.Module):
+    def __init__(self, backbone, dim=2048, pred_dim=512, nhead=4,
+                 sample_rate=16000, n_fft=512, f_min=0.0, f_max=8000.0, n_mels=96):                 
+        # backbone에 원하는 backbone 입력 ex) 'resnet' 
+        # dim: projection의 hidden fc dimension
+        # pred_dim: predictor의 hidden dimension
+        
+        super(Siamusic, self).__init__()
+        self.backbone = backbone
+
+        self.spec = torchaudio.transforms.MelSpectrogram(sample_rate=sample_rate, n_fft=n_fft, 
+                                                        f_min=f_min, f_max=f_max, n_mels=n_mels)
+        self.to_db = torchaudio.transforms.AmplitudeToDB()
+        self.spec_bn = nn.BatchNorm2d(1)
+        
+        if backbone in ['resnet50','resnet101','resnet152']:
+            self.encoder = models.__dict__[backbone](zero_init_residual=True,pretrained=False,num_classes=dim) # encoder: backbone + projector
+            self.encoder.conv1 = nn.Conv2d(1, 64, kernel_size=(7,7), stride=(2,2), padding=(3,3), bias=False)
+
+            # encoder의 projector를 3layer MLP로 구성
+            prev_dim = self.encoder.fc.weight.shape[-1] # [num_classes, 2048]
+            self.encoder.fc = nn.Sequential(nn.Linear(prev_dim, prev_dim, bias=False),
+                                                nn.BatchNorm1d(prev_dim),
+                                                nn.ReLU(inplace=True), #First Layer
+                                                
+                                                nn.Linear(prev_dim, prev_dim, bias=False),
+                                                nn.BatchNorm1d(prev_dim),
+                                                nn.ReLU(inplace=True), #Second Layer
+                                                
+                                                self.encoder.fc,
+                                                #    nn.Linear(prev_dim, dim, bias=False),
+                                                #    nn.BatchNorm1d(prev_dim),
+                                                #    nn.ReLU(inplace=True), #Third Layer
+                                                
+                                                nn.BatchNorm1d(dim, affine=False) #Output Layer
+                                                )
+            self.encoder.fc[6].bias.requires_grad = False
+        elif backbone == 'transformer':
+            self.transformer_encoder_layer = nn.TransformerEncoderLayer(d_model=188, nhead=nhead) # nhead in [1,2,4]
+            self.encoder = nn.Sequential(nn.TransformerEncoder(self.transformer_encoder_layer, num_layers=6),
+                                         nn.Flatten(),
+                                         nn.Linear(96*188,2048,bias=False),
+                                         nn.BatchNorm1d(2048),
+                                         nn.ReLU(inplace=True), #First Layer
+                                        
+                                         nn.Linear(2048, 2048, bias=False),
+                                         nn.BatchNorm1d(2048),
+                                         nn.ReLU(inplace=True), #Second Layer
+                                        
+                                        nn.Linear(2048, dim, bias=False),
+                                        nn.BatchNorm1d(2048),
+                                        nn.ReLU(inplace=True), #Third Layer
+                                        
+                                        nn.BatchNorm1d(dim, affine=False) #Output Layer
+                                        )
+
+        
+    def forward(self, x):
+        # x shape: [B, 1, 48000]
+        x = self.spec(x),   #[B, 1, 96, 188]
+        x = self.to_db(x)   #[B, 1, 96, 188]
+        x = self.spec_bn(x) #[B, 1, 96, 188]
+        if self.backbone == 'transformer':
+            x = x.squeeze() #[B,96,188]
+        z = self.encoder(x) # [B, dim]
+        return z
+
+
+
+
+
+
+
 class Siamusic(nn.Module):
     def __init__(self, backbone, dim=2048, pred_dim=512, nhead=4,
                  sample_rate=16000, n_fft=512, f_min=0.0, f_max=8000.0, n_mels=96):                 
