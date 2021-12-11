@@ -118,10 +118,6 @@ def test(model, test_loader, test_logger, args=None, n_test=10):
         df_show = df_show.reset_index(drop=True)
         df_candidates = df_candidates.reset_index(drop=True)
 
-        vec_show = get_vector(model,df_show)
-        vec_candidates = get_vector(model,df_candidates)
-        reward.update(get_reward(vec_show,vec_candidates))
-
         show_dataset = TestJsonAudio(df_show)
         candidates_dataset = TestJsonAudio(df_candidates)
         show_loader = DataLoader(show_dataset,batch_size=15,num_workers=2)
