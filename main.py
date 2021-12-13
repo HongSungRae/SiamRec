@@ -37,6 +37,9 @@ parser.add_argument('--nhead', default=4, type=int,
                     help='the number of transformer heads',choices=[1,2,4])
 parser.add_argument('--input_length', default=48000, type=int,
                     help='input length')
+parser.add_argument('--fma', default='samll', type=str,
+                    help='어떤 데이터셋으로 pre-train 할건가?',
+                    choices=['medium','small'])
 parser.add_argument('--batch_size', default=64, type=int,
                     help='batch size')
 parser.add_argument('--optim', default='adam', type=str,
@@ -154,7 +157,6 @@ def main():
     model = Siamusic(backbone=args.backbone,
                      dim=args.dim,
                      nhead=args.nhead).cuda()
-    model = nn.DataParallel(model)
 
     
     # pre-training or fine-tuning
@@ -162,7 +164,7 @@ def main():
         print('스크래치부터 학습되고 Test까지 진행합니다.')
 
         # save path
-        save_path=args.save_path+'_'+args.backbone+'_'+args.augmentation+'_'+args.optim
+        save_path=args.save_path+'_'+args.backbone+'_'+args.augmentation+'_'+args.optim+'_'+args.fma
         if not os.path.exists(save_path):
             os.makedirs(save_path)
         
@@ -171,8 +173,9 @@ def main():
             json.dump(args.__dict__, f, indent=2)
 
         # dataset loading
-        train_dataset = JsonAudio('D:/SiamRec/data/json_audio',args.input_length)
-        test_dataset = JsonAudio(data_dir='./data/json_audio')
+        dataset_path = 'D:/Siamusic/dataset/fma_'+args.fma+'_json'
+        train_dataset = JsonAudio(dataset_path,args.input_length)
+        test_dataset = JsonAudio(data_dir=dataset_path)
         train_loader = DataLoader(train_dataset,batch_size=args.batch_size,num_workers=2,shuffle=True,drop_last=True)
         test_loader = DataLoader(test_dataset,batch_size=20,num_workers=2)
         print('=== DataLoader R.e.a.d.y ===')
@@ -216,7 +219,7 @@ def main():
     
     else: ## Test
         print('학습된 Siam 모델을 불러와서 Test를 진행합니다.')
-        save_path=args.save_path+args.backbone+'_'+args.augmentation+'_'+args.optim
+        save_path=args.save_path+args.backbone+'_'+args.augmentation+'_'+args.optim+'_'+args.fma
         
         # 모델 불러오기 & pretrain모델 주입
         '''
@@ -224,7 +227,7 @@ def main():
         https://tutorials.pytorch.kr/beginner/saving_loading_models.html
         '''
 
-        PATH = './exp_' + args.backbone + '_' + args.augmentation + '_' + args.optim
+        PATH = './exp_' + args.backbone + '_' + args.augmentation + '_' + args.optim+'_'+args.fma
         pth_file = args.backbone+'_'+args.augmentation+'_100.pth'
         try:
             model.load_state_dict(torch.load(PATH+'/'+pth_file))
