@@ -9,7 +9,7 @@ It is a very important task to recommend items that suit the tastes of users on 
 
 ## 1.2 성능
 ### 1.2.1 정량평가
-
+![](https://github.com/HongSungRae/SiamRec/blob/main/images/performance.jpg?raw=true)
 ### 1.2.2 정성평가
 
 ## 1.3 Collapsing?
@@ -29,7 +29,7 @@ It is a very important task to recommend items that suit the tastes of users on 
 ```
 ## 2.2 데이터 다운로드받기
 ### FMA Dataset
-1. pre-training에 사용된 FMA-small 데이터를 [링크]()에서 다운로드 받으세요
+1. pre-training에 사용된 FMA-small 데이터를 [링크](https://github.com/mdeff/fma)에서 다운로드 받으세요
 2. 압축을 풀고 './SiamRec/data'에 압축을 풉니다
 ### Spotify Million Playlist
 1. 구글링해서 받으세요
