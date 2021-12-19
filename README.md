@@ -4,9 +4,9 @@
 ---
 # 1. 소개
 ## 1.1 개요
-```Planetext
+
 It is a very important task to recommend items that suit the tastes of users on the music streaming platform. Unlike platforms in other domains, users continuously consume items while staying on the music platform. Until now, music recommendations have been made using the Collaborative Filtering (CF) algorithm. However, in order to properly connect new songs with users added every day, any methodolgies to solve the cold-start problem were needed. In this study, we propose a playlist recommendation using audio presentation, which has not been frequently used. A network that has trained with large amounts of audio with self-supervised learning recommends new items to the appropriate playlist based on the presentation of existing playlist songs. To train the network, we propose three novel augmentation which is applicable to audio data. Our experimental results are presented qualitatively or quantitatively.
-```
+
 ## 1.2 성능
 ### 1.2.1 정량평가
 
