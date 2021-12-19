@@ -92,6 +92,7 @@ python main.py --save_path ./exp_resnet50_pedalboard_adam_small
 ---
 # 감사
 - 첫 플젝 잘 끝내서 모두에게 감사합니다 ;)
+- ♡메리 크리스마스♥
 
 ---
 # 라이센스
