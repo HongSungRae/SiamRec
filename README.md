@@ -11,9 +11,17 @@ It is a very important task to recommend items that suit the tastes of users on 
 ### 1.2.1 정량평가
 ![](https://github.com/HongSungRae/SiamRec/blob/main/images/performance.jpg?raw=true)
 ### 1.2.2 정성평가
+#### 아티스트
+
+#### 아티스트와 노래
 
 ## 1.3 Collapsing?
-
+### 1.3.1 Pedalboard Augmentation
+![](https://github.com/HongSungRae/SiamRec/blob/main/images/FMA_pedalboard.png?raw=true)
+### 1.3.2 Random Mix Augmentation
+![](https://github.com/HongSungRae/SiamRec/blob/main/images/FMA_randommix.png?raw=true)
+### 1.3.3 Spectrogram Image Augmentation
+![](https://github.com/HongSungRae/SiamRec/blob/main/images/FMA_Image.png?raw=true)
 ---
 # 2. How To Use
 - 이 코드를 사용하는 방법을 설명합니다
