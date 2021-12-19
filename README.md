@@ -12,6 +12,8 @@ It is a very important task to recommend items that suit the tastes of users on 
 
 ### 1.2.2 정성평가
 
+## 1.3 Collapsing?
+
 ---
 # 2. How To Use
 - 이 코드를 사용하는 방법을 설명합니다
@@ -19,7 +21,7 @@ It is a very important task to recommend items that suit the tastes of users on 
 ## 2.1 환경 설정하기
 1. 여러분의 환경에 git clone합니다 : git clone <this repo>
 2. [ffmpeg.exe](https://www.ffmpeg.org/download.html)를 디렉토리('./SiamRec)에 다운로드 받습니다
-3. ffplay.exe와 ffprobe.exe가 함께 다운됩니다. 그렇지 않다면 구글링하여 따로 다운받아 디렉토리에 넣습니다
+3. ```ffplay.exe```와 ffprobe.exe가 함께 다운됩니다. 그렇지 않다면 구글링하여 따로 다운받아 디렉토리에 넣습니다
 4. 크롤링을 위한 라이브러리와 보조 프로그램의 이유때문에 Window환경에서만 구동됩니다
 5. 아래와같이 requirements package를 다운로드합니다
 ```
@@ -61,7 +63,12 @@ python main.py --backbone resnet50
 - 학습이 되면 './SiamRec'경로에 모델이 저장됩니다. --no-from_scratch 옵션을 주고 --n_show를 10부터 18까지 바꿔가면서 성능을 비교해보세요
 
 ## 2.4 tSNE로 유사도 확인하기
-
+```
+python main.py --save_path ./exp_resnet50_pedalboard_adam_small
+               --backbone resnet50
+               --dim 2048
+               --iter 30
+```
 ---
 # 감사
 - 첫 플젝 잘 끝내서 모두에게 감사합니다 ;)
