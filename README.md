@@ -13,19 +13,19 @@ It is a very important task to recommend items that suit the tastes of users on 
 ### 1.2.2 정성평가
 - 1사분면에서 4사분면 방향으로 [ResNet101, ResNet50, ResNet152, Transformer] 입니다
 - Axis의 수치에는 별다른 의미 없습니다
-#### 아티스트
+#### A. 아티스트
 ##### Pedalboard Augmentation
 ![](https://github.com/HongSungRae/SiamRec/blob/main/images/artist_pedal.png?raw=true)
 
 ##### Random Mix Augmentation
-![]()
+![](https://github.com/HongSungRae/SiamRec/blob/main/images/artist_random.png?raw=true)
 
-#### 아티스트와 노래
+#### B. 아티스트와 노래
 ##### Pedalboard Augmentation
-![]()
+![](https://github.com/HongSungRae/SiamRec/blob/main/images/song_pedal.png?raw=true)
 
 ##### Random Mix Augmentation
-![]()
+![](https://github.com/HongSungRae/SiamRec/blob/main/images/song_random.png?raw=true)
 
 ## 1.3 Collapsing?
 ### 1.3.1 Pedalboard Augmentation
