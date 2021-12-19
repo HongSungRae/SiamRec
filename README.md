@@ -27,7 +27,7 @@ It is a very important task to recommend items that suit the tastes of users on 
 - 이 코드를 사용하는 방법을 설명합니다
 - 2.1부터 챕터 2의 마지막까지 모두 순서대로 진행해주세요
 ## 2.1 환경 설정하기
-1. 여러분의 환경에 git clone합니다 : git clone <this repo>
+1. 여러분의 환경에 git clone합니다 : ```git clone <this repo>```
 2. [ffmpeg.exe](https://www.ffmpeg.org/download.html)를 디렉토리('./SiamRec)에 다운로드 받습니다
 3. ```ffplay.exe```와 ```ffprobe.exe```가 함께 다운됩니다. 그렇지 않다면 구글링하여 따로 다운받아 디렉토리에 넣습니다
 4. 크롤링을 위한 라이브러리와 보조 프로그램의 이유때문에 Window환경에서만 구동됩니다
