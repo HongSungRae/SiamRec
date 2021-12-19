@@ -46,6 +46,7 @@ It is a very important task to recommend items that suit the tastes of users on 
 python main.py --backbone resnet50
                --dim 2048
                --input_length 48000
+               --augmentation pedalboard
                --fma small
                --batch_size 64
                --optim adam
@@ -55,6 +56,9 @@ python main.py --backbone resnet50
                --comment COMMENT WHATEVER YOU WANT
                --gpu_id 1
 ```
+- main.py의 argparser를 참고하여 backbone, dim(출력 벡터의 차원), optimizer, augmentation 등을 바꿔가며 실험합니다
+- nheads는 transformer를 위한 옵션입니다
+- 학습이 되면 './SiamRec'경로에 모델이 저장됩니다. --no-from_scratch 옵션을 주고 --n_show를 10부터 18까지 바꿔가면서 성능을 비교해보세요
 
 ## 2.4 tSNE로 유사도 확인하기
 
