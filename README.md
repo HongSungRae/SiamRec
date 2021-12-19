@@ -1,7 +1,7 @@
 # SiamRec
 - KAIST KSE801 2021 Fall Final Project
 - LaTeX formed report is available : 
----
+
 # 1. 소개
 ## 1.1 개요
 
@@ -42,8 +42,18 @@ It is a very important task to recommend items that suit the tastes of users on 
 7. utils.py에 mp3_to_json()의 설명을 읽고 자신의 경로에 맞게 방금 받은 데이터를 모두 json으로 변환하여 'data/audio_json'에 저장합니다
 
 ## 2.3 학습하기 + 추론하기
-```Python
-a = 10
+```
+python main.py --backbone resnet50
+               --dim 2048
+               --input_length 48000
+               --fma small
+               --batch_size 64
+               --optim adam
+               --epochs 100
+               --from_scratch
+               --n_show 15
+               --comment COMMENT WHATEVER YOU WANT
+               --gpu_id 1
 ```
 
 ## 2.4 tSNE로 유사도 확인하기
