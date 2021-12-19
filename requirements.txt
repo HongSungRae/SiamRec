@@ -1,0 +1,7 @@
+torchaudio
+pedalboard
+sounddevice
+librosa
+torchmetrics
+albumentations
+tsne_torch
