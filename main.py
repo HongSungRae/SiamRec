@@ -1,5 +1,5 @@
 # library
-from numpy.random import choice
+from numpy.random import choice, shuffle
 from torch.nn.modules.activation import Threshold
 from torch.utils.data import DataLoader
 import os
@@ -15,13 +15,15 @@ from torchmetrics import F1,AUROC,Accuracy,Recall
 import time
 import sys
 import pandas as pd
+from glob import glob
+import random
 
 # local
 from utils import *
 from dataset import JsonAudio, TestJsonAudio
 from loss import SiamusicLoss
-from augmentation import sungrae_pedal, random_mix
-from simsiam import Siamusic, TestEncoder
+from augmentation import sungrae_pedal, random_mix, image_augmentation
+from simsiam import Siamusic, TestEncoder, Siamusic_Image
 from metric import get_reward
 
 
@@ -51,7 +53,7 @@ parser.add_argument('--weight_decay', default=0.00001, type=float,
 parser.add_argument('--epochs', default=100, type=int,
                     help='train epoch')
 parser.add_argument('--augmentation', default='pedalboard', type=str,
-                    help='train epoch',choices=['pedalboard','randommix','iamge'])
+                    help='train epoch',choices=['pedalboard','randommix','image'])
 parser.add_argument('--patchs', default=12, type=int,
                      help='ramdom mix augmentation patchs')
 parser.add_argument('--from_scratch', default=False, type=bool,
@@ -59,6 +61,8 @@ parser.add_argument('--from_scratch', default=False, type=bool,
                     help='How To Make TRUE? : --from_scratch, Flase : --no-from_scratch')
 parser.add_argument('--threshold', default=0.5, type=float,
                     help='MTA 에서 confidence가 얼마 이상이면 1로 예측했다고 할 것인가?')
+parser.add_argument('--n_show', default=15, type=int,
+                    help='Test에서 플레이리스트 당 몇곡 보여줄 것 인가?')
 
 parser.add_argument('--comment', default='', type=str,
                     help='Any comment you want')								
@@ -80,7 +84,7 @@ def siam_train(model, trn_loader, criterion, optimizer, epoch, num_epoch, train_
         elif args.augmentation == 'randommix':
             x1, x2 = random_mix(audio,args.patchs), random_mix(audio,args.patchs)
         elif args.augmentation == 'image':
-            sys.exit('곧 업데이트 예정')
+            x1, x2 = image_augmentation(audio.numpy()), image_augmentation(audio.numpy()) 
         x1, x2 = x1.cuda(), x2.cuda()
         p1, z2, p2, z1 = model(x1,x2) # backbone(+projection) + predictor
         loss = criterion(p1,z2,p2,z1)
@@ -98,9 +102,8 @@ def siam_train(model, trn_loader, criterion, optimizer, epoch, num_epoch, train_
     
 
 # downstream tast test
-def test(model, test_loader, test_logger, args=None, n_test=10):
+def test(vector,n_show=15,n_test=10):
     print("=================== Test Start ====================")
-    model.eval()
     reward = AverageMeter()
 
     df = pd.read_csv('./data/spotify_million_playlist/url.csv')
@@ -108,60 +111,42 @@ def test(model, test_loader, test_logger, args=None, n_test=10):
     df_candidates = pd.DataFrame(df.columns) # 5곡 split
     for tst in range(n_test): # 10회 반복실험
         # 평균 Tensor
-        show = torch.zeros((1500,args.dim))
-        candidates = torch.zeros((500,args.dim))
+        show = torch.zeros((n_show*100,args.dim))
+        candidates = torch.zeros(((20-n_show)*100,args.dim))
 
-        # df를 20개 단위로 shuffle
-        temp_df = df.copy()
+        # Shuffle & Split
+        show_idx = []
+        candidates_idx = []
         for i in range(100):
-            df[i*20:i*20+20] = temp_df[i*20:i*20+20].sample(frac=1)
-            df_show = df_show.append(df[i*20:i*20+15],ignore_index=True)
-            df_candidates = df_candidates.append(df[i*20+15:i*20+20],ignore_index=True)
-        df = df.reset_index(drop=True)
-        df_show = df_show.reset_index(drop=True)
-        df_candidates = df_candidates.reset_index(drop=True)
-
-        show_dataset = TestJsonAudio(df_show)
-        candidates_dataset = TestJsonAudio(df_candidates)
-        show_loader = DataLoader(show_dataset,batch_size=15,num_workers=2)
-        candidates_loader = DataLoader(candidates_dataset,batch_size=5, num_workers=2)
-
-        for _ in range(30):
-            for i,audio in enumerate(show_loader):
-                audio = audio.cuda()
-                y = model(audio)
-                y = y.detach()
-                show[i*15:i*15+15] += y
-
-            for i,audio in enumerate(candidates_loader):
-                audio = audio.cuda()
-                y = model(audio)
-                y = y.detach()
-                show[i*5:i*5+5] += y
-        
-        show = show/30
-        candidates = candidates/30
+            temp = [i*20+j for j in range(20)]
+            random.shuffle(temp)
+            show_idx += temp[0:n_show]
+            candidates_idx += temp[n_show:]
+        for i,idx in enumerate(show_idx):
+            show[i] = vector[idx]
+        for i,idx in enumerate(candidates_idx):
+            candidates[i] = vector[idx]
 
         r = get_reward(show,candidates)
         reward.update(r)
 
-    print(f'Reward Score : {reward.avg}±{reward.std}')
+    print(f'Reward Score : {reward.avg:.2f}±{reward.std:.2f}')
     print("=================== Test End ====================")
 
 
 
 
 def main():
-    # define environment
-    os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu_id
-    model = Siamusic(backbone=args.backbone,
-                     dim=args.dim,
-                     nhead=args.nhead).cuda()
-
     
     # pre-training or fine-tuning
     if args.from_scratch: ## pre-training
         print('스크래치부터 학습되고 Test까지 진행합니다.')
+
+        # define environment
+        os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu_id
+        model = Siamusic(backbone=args.backbone,
+                     dim=args.dim,
+                     nhead=args.nhead).cuda()
 
         # save path
         save_path=args.save_path+'_'+args.backbone+'_'+args.augmentation+'_'+args.optim+'_'+args.fma
@@ -218,44 +203,157 @@ def main():
         test(test_model, test_loader, test_logger, args)
     
     else: ## Test
-        print('학습된 Siam 모델을 불러와서 Test를 진행합니다.')
-        save_path=args.save_path+args.backbone+'_'+args.augmentation+'_'+args.optim+'_'+args.fma
-        
-        # 모델 불러오기 & pretrain모델 주입
         '''
+        # 학습모델 넣기 참고용
         https://justkode.kr/deep-learning/pytorch-save
         https://tutorials.pytorch.kr/beginner/saving_loading_models.html
         '''
+        print('학습된 Siam 모델을 불러와서 Test를 진행합니다.')
 
-        PATH = './exp_' + args.backbone + '_' + args.augmentation + '_' + args.optim+'_'+args.fma
-        pth_file = args.backbone+'_'+args.augmentation+'_100.pth'
-        try:
-            model.load_state_dict(torch.load(PATH+'/'+pth_file))
-            test_model = TestEncoder(backbone=args.backbone,
-                                     dim=args.dim,
-                                     nhead=args.nhead).cuda()
-            test_model.encoder = model.encoder
-        except:
-            os.environ['CUDA_VISIBLE_DEVICES'] = '1'
-            test_model = TestEncoder(backbone=args.backbone,
-                                     dim=args.dim,
-                                     nhead=args.nhead).cuda()
-            model = Siamusic(backbone=args.backbone,
-                             dim=args.dim,
-                             nhead=args.nhead).cuda()
-            model.load_state_dict(torch.load(PATH+'/'+pth_file))
-            test_model.encoder = model.encoder
+        # 순서
+        '''
+        1. 모델 불러와서 주입
+        2. 2000곡을 20번 forward한 [2000,2048] 짜리 벡터 생성하여 저장
+        3. 15-5개 찢는 코드를 만들어 30회 반복 테스트
+        4. 테스트 점수 출력 및 저장
+        '''
+        # 모델 불러오기
+        torch.cuda.set_device(0) # 0 이 1번 , 1이 0번 GPU
+        print(f'Current GPU Device : {torch.cuda.current_device()}')
+
+        PATH = './exp_'+args.backbone+'_'+args.augmentation+'_'+args.optim+'_small'
+
+        if 'vector.json' not in os.listdir(PATH):
+            pth_file = ''
+            for file in glob(PATH+'/*.pth'):
+                pth_file = file
+            pth = torch.load(pth_file)
+
+            # key 바꿀 필요가 있을 때
+            keys = list(pth.keys())
+            # for key in keys:
+            #     pth[key.replace('module.','')] = pth.pop(key)
+            
+            if args.augmentation == 'image':
+                # sys.exit('아직 구현중')
+                try:
+                    os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+                    test_model = Siamusic_Image(backbone=args.backbone,
+                                           dim=args.dim,
+                                           nhead=args.nhead).cuda()
+                    test_model = nn.DataParallel(test_model).cuda()
+                    test_model.load_state_dict(pth)
+                    print('case 0')
+                except:
+                    os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+                    test_model = Siamusic_Image(backbone=args.backbone,
+                                           dim=args.dim,
+                                           nhead=args.nhead).cuda()
+                    test_model = nn.DataParallel(test_model).cuda()
+                    test_model.load_state_dict(pth)
+                    print('case 1')
 
 
-        # test dataloader 선언
-        test_dataset = JsonAudio(data_dir='./data/json_audio')
-        test_loader = DataLoader(test_dataset,batch_size=20,num_workers=2)
+                # test dataloader 선언
+                bs = 20
+                df = pd.read_csv('./data/spotify_million_playlist/url.csv')
+                test_dataset = TestJsonAudio(df=df, data_dir='./data/json_audio')
+                test_loader = DataLoader(test_dataset,batch_size=bs,num_workers=2,shuffle=False, drop_last= False)
+                print(f'Dataset 준비 : {len(test_dataset)}')
 
-        # logger
-        test_logger = Logger(os.path.join(save_path, 'train_loss.log'))
 
-        # 테스트시작
-        test(test_model, test_loader, test_logger, args)
+                # 모델에 넣어서 벡터뽑기
+                pop_vector = torch.zeros((2000,2048))
+                test_model.eval()
+                for i in tqdm(range(args.epochs)): # epoch만큼 노래 반복으로 들려줌
+                    for idx,audio in tqdm(enumerate(test_loader)):
+                        audio = audio.float() # [B, 1, 48000]
+                        audio = image_augmentation(audio.numpy()).cuda() # [B, 3, 256, 256]
+                        pred = test_model(audio)
+                        # pred = torch.squeeze(pred,dim=0)
+                        pop_vector[idx*bs:idx*bs+bs] += pred.detach().cpu()/args.epochs
+                        del(pred)
+                vector = pop_vector.detach().cpu().clone() # [2000, 2048]
+
+                # vector만 저장
+                vector_dict = {'vector':vector.tolist()}
+                with open(PATH + '/vector.json', 'w') as f:
+                    json.dump(vector_dict, f)
+
+                # Test하기
+                test(vector,n_show=args.n_show)
+
+            else:
+                try:
+                    try:
+                        model = Siamusic(backbone=args.backbone,
+                                dim=args.dim,
+                                nhead=args.nhead).cuda()
+                        model = nn.DataParallel(model).cuda()
+                        model.load_state_dict(pth)
+                        print('case 1')
+                    except:
+                        model = Siamusic(backbone=args.backbone,
+                                dim=args.dim,
+                                nhead=args.nhead).cuda()
+                        model = nn.DataParallel(model).cuda()
+                        model.load_state_dict(pth) 
+                        print('case 2')
+                except:
+                    try:
+                        model = Siamusic(backbone=args.backbone,
+                                dim=args.dim,
+                                nhead=args.nhead).cuda()
+                        model.load_state_dict(pth) 
+                        print('case 3')
+                    except:
+                        model = Siamusic(backbone=args.backbone,
+                                dim=args.dim,
+                                nhead=args.nhead).cuda()
+                        model.load_state_dict(pth)
+                        print('case 4')
+                test_model = TestEncoder(backbone=args.backbone,
+                                        dim=args.dim,
+                                        nhead=args.nhead).cuda()
+                test_model = nn.DataParallel(test_model,device_ids=[0,1]).cuda()
+                model = model.cuda()
+                test_model.encoder = model.encoder
+                del(model)
+
+
+            # test dataloader 선언
+            bs = 100
+            df = pd.read_csv('./data/spotify_million_playlist/url.csv')
+            test_dataset = TestJsonAudio(df=df, data_dir='./data/json_audio')
+            test_loader = DataLoader(test_dataset,batch_size=bs,num_workers=2,shuffle=False, drop_last= False)
+            print(f'Dataset 준비 : {len(test_dataset)}')
+
+
+            # 모델에 넣어서 벡터뽑기
+            pop_vector = torch.zeros((2000,2048))
+            test_model.eval()
+            for i in tqdm(range(args.epochs)): # epoch만큼 노래 반복으로 들려줌
+                for idx,audio in tqdm(enumerate(test_loader)):
+                    audio = audio.float().cuda() # [B, 1, 48000]
+                    pred = test_model(audio)
+                    # pred = torch.squeeze(pred,dim=0)
+                    pop_vector[idx*bs:idx*bs+bs] += pred.detach().cpu()/args.epochs
+                    del(pred)
+            vector = pop_vector.detach().cpu().clone() # [2000, 2048]
+
+            # vector만 저장
+            vector_dict = {'vector':vector.tolist()}
+            with open(PATH + '/vector.json', 'w') as f:
+                json.dump(vector_dict, f)
+
+            # Test하기
+            test(vector,n_show=args.n_show)
+
+        else: # 이미 vector가 있다면
+            with open(PATH + '/vector.json', 'r') as f:
+                v = json.load(f)['vector']
+                vector = torch.Tensor(v)
+            test(vector,n_show=args.n_show)
 
     print("Process Complete : it took {time:.2f} minutes".format(time=(time.time()-start)/60))
 

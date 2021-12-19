@@ -33,10 +33,8 @@ def mp3_to_json(from_dir,to_dir,duration=29,sr=22050):
             audio,_ = librosa.load(from_dir+'/'+music,sr=sr,duration=duration)
             audio = np.array(audio,dtype=float)
             audio_dict = {'audio' : audio.tolist()}
-            # os.chdir(to_dir)
-            with open(to_dir+'/'+music+'.json', 'w') as fp:
-                json.dump(audio_dict, fp)
-                # os.chdir('./')
+            with open(to_dir+'/'+music+'.json', 'w', encoding='ANSI') as fp:
+                json.dump(audio_dict,fp)
         except:
             print(f'{music}은(는) 변환되지 않습니다.')
 
@@ -190,5 +188,5 @@ if __name__ == '__main__':
     # mp3_to_wav('./data/train_audio')
 
     ## Mp3 to json
-    mp3_to_json('./data/audio','./data/json_audio')
+    mp3_to_json('D:/Siamusic/dataset/TestPOP','D:/Siamusic/dataset/TestPOP_json')
     pass

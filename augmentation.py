@@ -2,14 +2,23 @@
 input : torch.tensor() (16,1,48000)
 output : augmented audio tensor
 '''
+from threading import _DummyThread
+from numpy.core.records import array
 import pedalboard
 import random
 import time
 from utils import listen
-from dataset import MP3Audio, MP4Audio
+from dataset import MP3Audio
 import torch
+import torch.nn as nn
 from torch.utils.data import DataLoader
 import numpy as np
+import albumentations as A
+import torchaudio
+import librosa
+import librosa.display
+import matplotlib.pyplot as plt
+import cv2
 from pedalboard import (Pedalboard, 
                         Convolution, 
                         Compressor, 
@@ -19,9 +28,6 @@ from pedalboard import (Pedalboard,
                         Reverb, 
                         LadderFilter, 
                         Phaser)
-# official git : https://github.com/spotify/pedalboard
-# for more inforamtion and demo audio :
-# https://colab.research.google.com/drive/1bHjhJj1aCoOlXKl_lOfG99Xs3qWVrhch#scrollTo=iusi0_xLyz97
 
 '''
 == 패달보드 설명서 ==
@@ -121,6 +127,47 @@ def random_mix(audio,n_patchs=None):
 
 
 
+def TF():
+    return random.choice([True, False])
+
+def image_augmentation(audio_batch, sample_rate=22050, n_fft=2048, hop_length=512,
+                        hor_flip=TF(), random_crop=True, HueSature=TF(), RandomBrightnessContrast=TF()):
+    bs = audio_batch.shape[0]
+    img_batch = np.zeros((bs,3,256,256))
+    
+    plt.axis('off')
+    for i, audio in enumerate(audio_batch):
+        y = audio.squeeze()
+        Y = librosa.stft(y, window='hann', n_fft=n_fft, hop_length=hop_length)
+        D = librosa.amplitude_to_db(np.abs(Y), ref=np.max)
+
+        img = librosa.display.specshow(D, y_axis='linear', x_axis='time', hop_length=hop_length, sr=sample_rate)
+        plt.clf()
+
+        fig = img.figure
+        fig.canvas.draw()
+        img = np.array(fig.canvas.renderer._renderer)
+        img = cv2.cvtColor(img, cv2.COLOR_RGBA2RGB)
+        img = cv2.resize(img, (256, 256), interpolation=cv2.INTER_AREA) # train에서 주석처리
+        # Training 때만 Aug 해야함. Test시에는 주석처리하시오.
+        # if hor_flip == True:
+        #     img = A.HorizontalFlip()(image=img)['image']
+            
+        # if random_crop == True:
+        #     img = A.RandomCrop(height=256,width=256)(image=img)['image']
+
+        # if HueSature == True:
+        #     img = A.HueSaturationValue()(image=img)['image']
+
+        # if RandomBrightnessContrast == True:
+        #     img = A.RandomBrightnessContrast()(image=img)['image']
+        img_batch[i] = img.transpose((2,0,1))
+
+    img_batch = torch.from_numpy(img_batch).type(torch.cuda.FloatTensor)
+
+    return img_batch # []
+
+
 if __name__ == '__main__':
     input_length = 48000
     # WAV - Pedalboard
@@ -136,13 +183,17 @@ if __name__ == '__main__':
     # listen(aug[0,0])
 
     # WAV - Random Mix
-    print('== WAV - Random Mix ==')
-    mp3_data = MP3Audio('validation',input_length=input_length,type='mp3')
-    mp3_dataloader = DataLoader(mp3_data,batch_size=1,drop_last=True,shuffle=True)
-    mp3_x = next(iter(mp3_dataloader))
-    print('Origianl Sounds')
-    listen(mp3_x[0,0])
-    aug = random_mix(mp3_x,n_patchs=12)
-    time.sleep(1)
-    print('Now on Mixed sounds')
-    listen(aug[0,0])
+    # print('== WAV - Random Mix ==')
+    # mp3_data = MP3Audio('validation',input_length=input_length,type='mp3')
+    # mp3_dataloader = DataLoader(mp3_data,batch_size=1,drop_last=True,shuffle=True)
+    # mp3_x = next(iter(mp3_dataloader))
+    # print('Origianl Sounds')
+    # listen(mp3_x[0,0])
+    # aug = random_mix(mp3_x,n_patchs=12)
+    # time.sleep(1)
+    # print('Now on Mixed sounds')
+    # listen(aug[0,0])
+
+    d = torch.zeros((20,1,48000))
+    aug = image_augmentation(d.numpy())
+    print(aug.shape)

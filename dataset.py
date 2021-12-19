@@ -47,8 +47,7 @@ class MP3Audio(Dataset):
 
 class JsonAudio(Dataset):
     '''
-    mp3를 python에서 부르는 것은 매우 느립니다.
-    json으로 변환된 음악을 불러오는 class입니다.
+    Json 형태로 저장된 오디오를 불러오는 class
     '''
     def __init__(self,data_dir,input_length=48000):
         self.data_dir = data_dir
@@ -61,9 +60,19 @@ class JsonAudio(Dataset):
     def __getitem__(self, idx):
         with open(self.data_dir+'/'+self.data_list[idx], 'r') as f:
             waveform = np.array(json.load(f)['audio'],dtype=float)
-        random_idx = np.random.randint(low=0, high=int(waveform.shape[-1] - self.input_length))
-        waveform = waveform[0][random_idx:random_idx+self.input_length]
-        audio = np.expand_dims(waveform, axis = 0) # expand to [1,48000]
+        try:
+            random_idx = np.random.randint(low=0, high=int(waveform.shape[-1] - self.input_length))
+            if len(waveform.shape) == 1:
+                waveform = waveform[random_idx:random_idx+self.input_length]
+            elif len(waveform.shape) == 2:
+                waveform = waveform[0][random_idx:random_idx+self.input_length]
+            else:
+                raise ValueError('Shape이 이상한데요?')
+            audio = np.expand_dims(waveform, axis = 0) # expand to [1,48000]
+        except:
+            temp = np.zeros((48000))
+            temp[0:int(waveform.shape[-1])] = waveform
+            audio = np.expand_dims(temp, axis = 0) # expand to [1,48000]
         return audio
 
 
@@ -88,17 +97,23 @@ class TestJsonAudio(Dataset):
         for item in song:
             if item in self.error_term:
                 song = song.replace(item,'^')
+        data = self.data_dir + '/' + song + '.mp4.json'
+        with open(data, 'r') as f:
+            waveform = np.array(json.load(f)['audio'],dtype=float)
         try:
-            data = self.data_dir + '/' + song + '.mp4.json'
-            with open(data, 'r') as f:
-                waveform = np.array(json.load(f)['audio'],dtype=float)
+            random_idx = np.random.randint(low=0, high=int(waveform.shape[-1] - self.input_length))
+            if len(waveform.shape) == 1:
+                waveform = waveform[random_idx:random_idx+self.input_length]
+            elif len(waveform.shape) == 2:
+                waveform = waveform[0][random_idx:random_idx+self.input_length]
+            else:
+                raise ValueError('Shape이 이상한데요?')
+            audio = np.expand_dims(waveform, axis = 0) # expand to [1,48000]
         except:
-            data = self.data_dir + '/' + song + '.mp3.json'
-            with open(data, 'r') as f:
-                waveform = np.array(json.load(f)['audio'],dtype=float)
-        random_idx = np.random.randint(low=0, high=int(waveform.shape[-1] - self.input_length))
-        waveform = waveform[0][random_idx:random_idx+self.input_length]
-        audio = np.expand_dims(waveform, axis = 0) # expand to [1,48000]
+            temp = np.zeros((48000))
+            temp[0:int(waveform.shape[-1])] = waveform
+            audio = np.expand_dims(temp, axis = 0) # expand to [1,48000]
+
         return audio
 
 
